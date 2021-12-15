@@ -3,6 +3,7 @@ import * as fs from 'fs';
 
 let inputFile = "input.txt"
 // inputFile = "test.txt"
+let timeResult = true
 
 const simpleNumsLengths = [2,3,4,7]
 const segmentBitmappedNumbers = [1110111, 10010, 1011101, 1011011, 111010, 1101011, 1101111, 1010010, 1111111, 1111011]
@@ -27,6 +28,8 @@ function findSimpleNumbers(signaldata: string[][][]){
     }
     console.log(count)
 }
+
+/* Problem 2, take one, funny solution counting up how often a wire is seen */
 
 // Return the character/wire in the signal we haven't yet found the location of
 function findUnkownWire(signal: String, segmentsToWire: string[]) : String{
@@ -93,32 +96,78 @@ function solveSignalData(signalData: string[][][]){
     console.log(count)
 }
 
+/* Problem 2, take 2, smarter (but slower?) solution, not looking at wires, doing some process of elim */
+
+function strContainsStr(s1: String, s2: String) : boolean {
+    let short = s1.length < s2.length ? s1 : s2
+    let long = s1.length > s2.length ? s1 : s2
+    for(let i = 0; i < short.length; i++){
+        let c = short.charAt(i)
+        if(long.indexOf(c) < 0){
+            return false
+        }
+    } 
+    return true
+}
+
+function alphabetize(str: string) : string {
+    return str.split('').sort().join('')
+}
+
+function finder(signalValues: string[], found: string[], length: number, comparingStringIndex?: number) {
+    for(let signal of signalValues) {
+        if(signal.length == length && !found.includes(signal)) {
+            if(!comparingStringIndex || strContainsStr(signal, found[comparingStringIndex])){
+                return signal
+            }
+        }
+    }
+    console.log("Bad")
+    return ""
+}
+
+// Problem two v2
+function solveSignalDataV2(signalData: string[][][]){
+    let count = 0
+    for (let entry of signalData) {
+
+        let signalValues = entry[0].sort((a,b) => a.length - b.length)
+        let wireNames = Array(10)
+
+        wireNames[1] = signalValues[0]
+        wireNames[7] = signalValues[1]
+        wireNames[4] = signalValues[2]
+        wireNames[8] = signalValues[9]
+        signalValues = signalValues.slice(3, 9)
+
+        wireNames[9] = finder(signalValues, wireNames, 6, 4)
+        wireNames[0] = finder(signalValues, wireNames, 6, 7)
+        wireNames[6] = finder(signalValues, wireNames, 6)
+        wireNames[3] = finder(signalValues, wireNames, 5, 7)
+        wireNames[5] = finder(signalValues, wireNames, 5, 9)
+        wireNames[2] = finder(signalValues, wireNames, 5)
+
+        wireNames = wireNames.map(wire => alphabetize(wire))
+
+        let result = 0
+        for ( let output of entry[1]){
+            result *= 10
+            result += wireNames.indexOf(alphabetize(output))
+        }
+        count += result
+
+    }
+    console.log(count)
+}
+
 let signalData = openFile(inputFile)
 findSimpleNumbers(signalData)
+
+let t1 = new Date().getTime() 
 solveSignalData(signalData)
+let t2 = new Date().getTime()
+if (timeResult) console.log("Time old ", t2 - t1)
 
-
-/*
-digit: total segments / map of every segment / bitmap value
-        0 1 2 3 4 5 6
-0: 6    x x x   x x x   1110111
-1: 2        x     x     0010010
-2: 5    x   x x x   x   1011101
-3: 5    x   x x   x x   1011011
-4: 4      x x x   x     0111010
-5: 5    x x   x   x x   1101011
-6: 6    x x   x x x x   1101111
-7: 3    x   x     x     1010010
-8: 7    x x x x x x x   1111111
-9: 6    x x x x   x x   1111011
-
-        8 6 8 7 4 9 7
-
-bad drawing
- 0       8
-1 2     6 8
- 3       7
-4 5     4 9
- 6       7
-
-*/
+solveSignalDataV2(signalData)
+let t3 = new Date().getTime()
+if (timeResult) console.log("Time new ", t3 - t2)
